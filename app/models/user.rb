@@ -21,7 +21,13 @@ class User < ActiveRecord::Base
   validates :email, presence:   true,
                     format:     { with: VALID_EMAIL_REGEX },
                     uniqueness: { case_sensitive: false }
-  validates :password, presence: true, length: { minimum: 6 }
+#  validates :password, presence: true, length: { minimum: 6 }
+# WDS: Removed presence: true as this causes the error "Password can't be blank"
+#      The has_secure_password will produce an error of "Password digest" can't be blank
+#      and the exercise wanted us to change this from "Password digest" to 
+#      just "Password".  This was done in en.yml changing password_digest to "Password"
+#      The absense of password causes the absense of password_digest
+  validates :password, length: { minimum: 6 }
   validates :password_confirmation, presence: true
 
 end
