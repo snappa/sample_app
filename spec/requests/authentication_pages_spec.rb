@@ -18,7 +18,13 @@ describe "Authentication" do
       before { click_button "Sign in" }
 
       it { should have_selector('title', text: 'Sign in') }
-      it { should have_selector('div.alert.alert-error', text: 'Invalid') }
+# WDS: Original test relied on structure of div and the two classes, alert and
+#      alert-error being present.  This abstracts it out using a custom matcher
+#      defined in utilities.rb  This way the page can change and we only have to
+#      change the utilities.rb file.
+#
+#      it { should have_selector('div.alert.alert-error', text: 'Invalid') }
+      it { should have_error_message('Invalid') }
 
       describe "after visiting another page" do
         before { click_link "Home" }
@@ -29,9 +35,12 @@ describe "Authentication" do
     describe "with valid information" do
       let(:user) { FactoryGirl.create(:user) }
       before do
+=begin
         fill_in "Email",    with: user.email
         fill_in "Password", with: user.password
         click_button "Sign in"
+=end
+        valid_signin(user)
       end
 
       it { should have_selector('title', text: user.name) }
