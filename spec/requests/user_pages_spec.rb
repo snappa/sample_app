@@ -36,7 +36,8 @@ describe "User pages" do
 
       describe "as an admin user" do
         let(:admin) { FactoryGirl.create(:admin) }
-        before do
+        before :each do
+          @admin2 = FactoryGirl.create(:admin, email: "dobedobedo@foo.com")
           sign_in admin
           visit users_path
         end
@@ -46,7 +47,36 @@ describe "User pages" do
           expect { click_link('delete') }.to change(User, :count).by(-1)
         end
         it { should_not have_link('delete', href: user_path(admin)) }
+
+        it { expect { delete user_path(admin) }.not_to change(User, :count) }
+
+        it "admin2 should not be nil when looked up" do
+          @admin2 = User.find_by_email("dobedobedo@foo.com")
+          @admin2.should_not be_nil
+        end
+        it { expect { delete user_path(@admin2) }.to change(User, :count).by(-1) }
       end
+
+      describe "one admin delete another" do
+#        let(:admin) { FactoryGirl.create(:admin) }
+#        let(:admin2) { FactoryGirl.create(:admin, email:"whoopdedo@dobedoNT.com") }
+        before :each do
+          @admin = FactoryGirl.create(:admin)
+          @admin2 = FactoryGirl.create(:admin, email:"whoopdedo@dobedoNT.com")
+          sign_in @admin
+          visit users_path
+        end
+        it { should have_link('delete', href: user_path(User.first)) }
+
+        it { expect { delete user_path(@admin) }.not_to change(User, :count) }
+        it { expect { delete user_path(@admin2) }.to change(User, :count).by(-1) }
+
+#        a2 = User.find_by_email("whoopdedo@dobedoNT.com")
+#        it { a2.should_not be_nil }
+#        it {a2.email.should == "whoopdedo@dobedont.com"}
+        #it { expect { delete user_path(admin2) }.to change(User, :count).by(-1) }
+      end
+
     end
     
   end
@@ -167,7 +197,7 @@ describe "User pages" do
         fill_in "Name",             with: new_name
         fill_in "Email",            with: new_email
         fill_in "Password",         with: user.password
-        fill_in "Confirm Password", with: user.password
+        fill_in "Confirmation", with: user.password
         click_button "Save changes"
       end
 
@@ -177,6 +207,61 @@ describe "User pages" do
       specify { user.reload.name.should  == new_name }
       specify { user.reload.email.should == new_email }
     end
+  end
+
+  # section 9.6 Exercises, question 1.  Test for admin accessibility.
+  describe "can only access admin when attr_accessible" do
+    let(:user) { FactoryGirl.create(:user) }
+    before do
+      user.toggle!(:admin)
+    end
+
+    subject { user }
+
+    it { should respond_to(:admin) }
+
+    it { should be_admin }
+
+    describe "toggling admin" do
+      before do
+        user.toggle!(:admin)
+      end
+
+      it { should_not be_admin }
+      @user = User.new(name:"fred", email: "garvin@snl.com", password:"foobar",password_confirmation:"foobar")
+      @user.save
+      @u = User.find_by_email "garvin@snl.com"
+      it "should not be true" do
+#        @user.reload.name.should == "fred"
+        foo = "fred"
+        foo.should == "fred"
+        foo = "freddy"
+        foo.should == "freddy"
+
+        # Can't mass assign without adding admin to attr_accessible.  Make sure 
+        # this raises an exception
+        expect{ User.new(name:"freddy", email: "fred@garvin.com", password:"foobar",password_confirmation:"foobar", admin: true) } .to_not raise_error
+
+        fuser = User.new(name:"freddy", email: "fred@garvin.com", password:"foobar",password_confirmation:"foobar")
+
+        fuser.email.should == "fred@garvin.com"
+        fuser.should_not be_admin
+        fuser.admin = true
+        fuser.should be_admin
+      end
+#      @user.reload.toggle!(:admin)
+#      it { should_not be_admin }
+
+    end
+
+=begin
+    it "should now allow access to admin on ctor" do
+      expect do
+        @user = User.new(name: "Fred", email: "foo@boobar.com", password: "foobar", 
+                       password_confirmation: "foobar", admin: true)
+      end.to raise_error(ActiveModel::MassAssignmentSecurity::Error)
+    end
+=end
   end
 
 end

@@ -26,6 +26,11 @@ describe "Authentication" do
 #      it { should have_selector('div.alert.alert-error', text: 'Invalid') }
       it { should have_error_message('Invalid') }
 
+      # WDS: The following two checks for NOT having links are from exercises in
+      #      Section 9.6, ques 3.
+      it { should_not have_link('Profile') }
+      it { should_not have_link('Settings') }
+
       describe "after visiting another page" do
         before { click_link "Home" }
         it { should_not have_selector('div.alert.alert-error') }
@@ -69,9 +74,15 @@ describe "Authentication" do
       describe "when attempting to visit a protected page" do
         before do
           visit edit_user_path(user)
+=begin
+  WDS: The commented out credentials were replaced with sign_in user from the 
+        exercises in sec 9.6, ques 4.
+
           fill_in "Email",    with: user.email
           fill_in "Password", with: user.password
           click_button "Sign in"
+=end
+          sign_in user
         end
 
         describe "after signing in" do
@@ -79,7 +90,22 @@ describe "Authentication" do
           it "should render the desired protected page" do
             page.should have_selector('title', text: 'Edit user')
           end
+
+          describe "when signing in again" do
+            before do
+              delete signout_path
+              visit signin_path
+              fill_in "Email",    with: user.email
+              fill_in "Password", with: user.password
+              click_button "Sign in"
+            end
+
+            it "should render the default (profile) page" do
+              page.should have_selector('title', text: user.name) 
+            end
+          end
         end
+
       end
 
       describe "in the Users controller" do
@@ -106,6 +132,7 @@ describe "Authentication" do
     describe "as wrong user" do
       let(:user) { FactoryGirl.create(:user) }
       let(:wrong_user) { FactoryGirl.create(:user, email: "wrong@example.com") }
+
       before { sign_in user }
 
       describe "visiting Users#edit page" do
